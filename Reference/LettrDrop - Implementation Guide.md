@@ -219,6 +219,24 @@ and glow the Score stat. Play continues.
 
 ---
 
+## 9. Post‑launch hardening
+
+**Circle back once the core game is working end‑to‑end.**
+
+- **Re‑enable email confirmation** in Supabase → Authentication → Settings. Add a
+  "check your inbox" screen (`ConfirmEmail`) after sign‑up so new users know to verify.
+  Update the auth flow to handle the `email_not_confirmed` error gracefully.
+- **Social OAuth providers** (Apple / Google / Facebook):
+  1. Register a developer app with each provider and obtain client ID + secret.
+  2. Enter the credentials in Supabase → Authentication → Providers.
+  3. Configure the redirect URL (`<supabase-url>/auth/v1/callback`) in each provider's dashboard.
+  4. Wire the social buttons in `AuthPage` to call `supabase.auth.signInWithOAuth({ provider })`.
+  5. Handle the `AuthSocialName` screen for providers that don't return a display name.
+- **Password‑reset flow:** wire `ForgotSent` → Supabase `resetPasswordForEmail` →
+  deep‑link → `ResetPassword` screen → `updateUser({ password })`.
+
+---
+
 ## Cross‑cutting checklist
 
 - **Design tokens:** keep `tileVars` + `FV_VALUES` / `FV_PAL` as the one source for tile
