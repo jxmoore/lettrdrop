@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LetterDrop v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f; --surface: #13131a; --border: #2a2a3a;
+    --accent: #e8f428; --accent2: #ff6b35;
+    --text: #f0f0f5; --text-dim: #6b6b80;
+    --tile-bg: #1c1c26; --cell-size: 44px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 20px; overflow: hidden;
+  }
+  .wrapper { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+  .header { display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 360px; }
+  .logo { font-size: 22px; font-weight: 800; }
+  .logo span { color: var(--accent); }
+  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; width: 100%; max-width: 360px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
+  .stat-label { font-size: 9px; font-family: 'Space Mono', monospace; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value { font-size: 20px; font-weight: 800; line-height: 1; }
+  .stat-value.accent { color: var(--accent); }
+
+  .board {
+    position: relative;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 4px;
+    display: grid;
+    grid-template-columns: repeat(7, var(--cell-size));
+    grid-template-rows: repeat(10, var(--cell-size));
+    gap: 2px;
+  }
+  .cell { width: var(--cell-size); height: var(--cell-size); background: rgba(255,255,255,0.02); border-radius: 6px; }
+  .letter-block {
+    position: absolute;
+    width: var(--cell-size); height: var(--cell-size);
+    background: var(--tile-bg);
+    border: 1.5px solid var(--border); border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 20px;
+    transition: top 0.18s cubic-bezier(0.4, 0, 0.6, 1), left 0.08s linear;
+  }
+  .letter-block.active {
+    background: #1e1e08; border-color: var(--accent); color: var(--accent);
+    box-shadow: 0 0 8px rgba(232,244,40,0.3);
+  }
+  .letter-block.rare { border-color: #3a2a4a; color: #c084fc; }
+  .letter-block.found {
+    animation: foundPulse 0.5s ease-out;
+    background: #2a2a10; border-color: var(--accent); color: var(--accent);
+  }
+  @keyframes foundPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.18); box-shadow: 0 0 18px rgba(232,244,40,0.7); }
+  }
+  .letter-block.clearing { animation: clearOut 0.5s ease-out forwards; }
+  @keyframes clearOut {
+    0% { transform: scale(1.15); opacity: 1; }
+    100% { transform: scale(0.2) translateY(-40px); opacity: 0; }
+  }
+
+  .word-found {
+    position: absolute; top: 40%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 32px; font-weight: 800; color: var(--accent);
+    text-shadow: 0 0 24px rgba(232,244,40,0.9);
+    pointer-events: none; z-index: 100; opacity: 0;
+    letter-spacing: 2px; white-space: nowrap;
+  }
+  .word-found.show { animation: wfAnim 1.2s ease-out forwards; }
+  @keyframes wfAnim {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+    60%  { opacity: 1; transform: translate(-50%, -60%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -80%) scale(0.9); }
+  }
+
+  .controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; width: 100%; max-width: 360px; }
+  .btn {
+    padding: 14px; border: 1.5px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text);
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px;
+    cursor: pointer; text-transform: uppercase; letter-spacing: 1px; user-select: none;
+  }
+  .btn:active { transform: scale(0.96); background: #222230; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #0a0a0f; }
+
+  .hint {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    color: var(--text-dim); text-align: center; margin-top: 4px;
+    max-width: 360px; line-height: 1.5;
+  }
+
+  .gameover {
+    position: fixed; inset: 0; background: rgba(10,10,15,0.93);
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 16px; z-index: 200;
+    opacity: 0; pointer-events: none; transition: opacity 0.4s;
+  }
+  .gameover.show { opacity: 1; pointer-events: all; }
+  .gameover-title { font-size: 42px; font-weight: 800; color: var(--accent2); }
+  .gameover-score { font-family: 'Space Mono', monospace; color: var(--text-dim); text-align: center; }
+  .gameover-score span { color: var(--accent); font-size: 32px; display: block; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+  <div class="header">
+    <div class="logo">Letter<span>Drop</span></div>
+    <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--text-dim)">v2 · AUTO</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Score</div><div class="stat-value accent" id="score">0</div></div>
+    <div class="stat"><div class="stat-label">Speed</div><div class="stat-value" id="speed">1</div></div>
+    <div class="stat"><div class="stat-label">Words</div><div class="stat-value" id="words">0</div></div>
+  </div>
+
+  <div class="board" id="board">
+    <div class="word-found" id="wordFound"></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="leftBtn">◀</button>
+    <button class="btn" id="downBtn">▼ Down</button>
+    <button class="btn" id="rightBtn">▶</button>
+  </div>
+
+  <div class="hint">
+    Arrows ← → to move · ↓ speed · Space to drop<br>
+    Words form automatically in rows or columns
+  </div>
+</div>
+
+<div class="gameover" id="gameOver">
+  <div class="gameover-title">Game Over</div>
+  <div class="gameover-score">Final Score<span id="finalScore">0</span></div>
+  <button class="btn primary" style="padding:12px 32px" onclick="restartGame()">Play Again</button>
+</div>
+
+<script>
+const COLS = 7, ROWS = 10;
+const LETTER_VALUES = {A:1,E:1,I:1,O:1,S:1,T:1,R:1,N:1,L:2,U:2,D:2,H:2,C:2,M:3,P:3,F:3,G:3,W:3,Y:3,B:4,V:4,K:4,X:5,J:5,Q:6,Z:7};
+const LETTER_POOL = [];
+const WEIGHTS = {1:18,2:10,3:6,4:3,5:2,6:1,7:1};
+for (const [l,v] of Object.entries(LETTER_VALUES)) for (let i=0; i<(WEIGHTS[v]||1); i++) LETTER_POOL.push(l);
+
+const CELL_SIZE = 44, GAP = 2, PADDING = 4;
+
+let grid = [];
+let currentBlock = null;
+let fallSpeed = 800;
+let fallTimer = null;
+let score = 0, wordsFound = 0, speedLevel = 1;
+let gameActive = false;
+let isProcessing = false;
+let wordCache = new Map();
+
+function randomLetter() { return LETTER_POOL[Math.floor(Math.random()*LETTER_POOL.length)]; }
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function initGrid() {
+  grid = [];
+  for (let r=0; r<ROWS; r++) {
+    grid.push([]);
+    for (let c=0; c<COLS; c++) grid[r].push(null);
+  }
+}
+
+function renderBoard() {
+  const board = document.getElementById('board');
+  const wf = document.getElementById('wordFound');
+  board.innerHTML = '';
+  board.appendChild(wf);
+
+  for (let r=0; r<ROWS; r++) {
+    for (let c=0; c<COLS; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      board.appendChild(cell);
+    }
+  }
+  for (let r=0; r<ROWS; r++) {
+    for (let c=0; c<COLS; c++) {
+      if (grid[r][c]) placeBlock(r, c, grid[r][c], false);
+    }
+  }
+  if (currentBlock) placeBlock(currentBlock.row, currentBlock.col, currentBlock.letter, true);
+}
+
+function placeBlock(row, col, letter, active) {
+  const board = document.getElementById('board');
+  const val = LETTER_VALUES[letter] || 1;
+  const isRare = val >= 4;
+  const el = document.createElement('div');
+  el.className = `letter-block${active ? ' active' : ''}${isRare ? ' rare' : ''}`;
+  el.style.left = (PADDING + col*(CELL_SIZE+GAP)) + 'px';
+  el.style.top  = (PADDING + row*(CELL_SIZE+GAP)) + 'px';
+  el.dataset.row = row;
+  el.dataset.col = col;
+  el.textContent = letter;
+  board.appendChild(el);
+}
+
+function spawnBlock() {
+  if (!gameActive) return;
+  const col = Math.floor(COLS/2);
+  if (grid[0][col] !== null) return endGame();
+  currentBlock = { row: 0, col, letter: randomLetter() };
+  renderBoard();
+  startFalling();
+}
+
+function startFalling() {
+  clearTimeout(fallTimer);
+  if (isProcessing) return;
+  fallTimer = setTimeout(tick, fallSpeed);
+}
+
+async function tick() {
+  if (!gameActive || !currentBlock || isProcessing) return;
+  const nextRow = currentBlock.row + 1;
+  if (nextRow >= ROWS || grid[nextRow][currentBlock.col] !== null) {
+    grid[currentBlock.row][currentBlock.col] = currentBlock.letter;
+    currentBlock = null;
+    renderBoard();
+    await checkForWords();
+    if (gameActive) setTimeout(spawnBlock, 100);
+  } else {
+    currentBlock.row = nextRow;
+    renderBoard();
+    startFalling();
+  }
+}
+
+function moveLeft() {
+  if (!currentBlock || isProcessing) return;
+  if (currentBlock.col > 0 && grid[currentBlock.row][currentBlock.col - 1] === null) {
+    currentBlock.col--;
+    renderBoard();
+  }
+}
+function moveRight() {
+  if (!currentBlock || isProcessing) return;
+  if (currentBlock.col < COLS-1 && grid[currentBlock.row][currentBlock.col + 1] === null) {
+    currentBlock.col++;
+    renderBoard();
+  }
+}
+function speedDown() {
+  if (!currentBlock || isProcessing) return;
+  clearTimeout(fallTimer);
+  tick();
+}
+function dropNow() {
+  if (!currentBlock || isProcessing) return;
+  clearTimeout(fallTimer);
+  while (currentBlock && currentBlock.row < ROWS-1 && grid[currentBlock.row+1][currentBlock.col] === null) {
+    currentBlock.row++;
+  }
+  tick();
+}
+
+// ── Word detection: scan entire board for valid words (rows + columns), take longest ──
+async function checkForWords() {
+  isProcessing = true;
+
+  // Keep checking until no more words found (chain reactions)
+  let foundAny = true;
+  while (foundAny) {
+    foundAny = false;
+    const candidates = [];
+
+    // Rows
+    for (let r=0; r<ROWS; r++) {
+      const str = grid[r].map(l => l || ' ').join('');
+      collectSubstrings(str, 'row', r).forEach(s => candidates.push(s));
+    }
+    // Columns
+    for (let c=0; c<COLS; c++) {
+      const str = grid.map(row => row[c] || ' ').join('');
+      collectSubstrings(str, 'col', c).forEach(s => candidates.push(s));
+    }
+
+    // Sort longest first so longer words take priority
+    candidates.sort((a, b) => b.word.length - a.word.length);
+
+    for (const cand of candidates) {
+      const valid = await isValidWord(cand.word);
+      if (valid) {
+        await clearWord(cand);
+        foundAny = true;
+        break; // restart scan after clearing — board changed
+      }
+    }
+  }
+
+  isProcessing = false;
+}
+
+function collectSubstrings(str, orientation, idx) {
+  const results = [];
+  for (let len = str.length; len >= 3; len--) {
+    for (let start = 0; start <= str.length - len; start++) {
+      const sub = str.substring(start, start + len);
+      if (sub.includes(' ')) continue;
+      results.push({ word: sub, start, orientation, idx });
+    }
+  }
+  return results;
+}
+
+async function isValidWord(word) {
+  if (word.length < 3) return false;
+  if (wordCache.has(word)) return wordCache.get(word);
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 10,
+        system: 'You are a word validator. Reply with only "YES" if the input is a valid common English word (not a proper noun, abbreviation, or obscure word). Reply with only "NO" otherwise.',
+        messages: [{role:'user', content: word}]
+      })
+    });
+    const data = await response.json();
+    const ans = (data?.content?.[0]?.text || 'NO').trim().toUpperCase();
+    const valid = ans.startsWith('YES');
+    wordCache.set(word, valid);
+    return valid;
+  } catch(e) {
+    return false;
+  }
+}
+
+async function clearWord(cand) {
+  const { word, start, orientation, idx } = cand;
+  const cellsToClear = [];
+  for (let i=0; i<word.length; i++) {
+    if (orientation === 'row') cellsToClear.push({row: idx, col: start + i});
+    else cellsToClear.push({row: start + i, col: idx});
+  }
+
+  const pts = [...word].reduce((s,l) => s+(LETTER_VALUES[l]||1), 0);
+  score += pts;
+  wordsFound++;
+
+  showWordFound(word, pts);
+
+  cellsToClear.forEach(({row, col}) => {
+    const el = document.querySelector(`.letter-block[data-row="${row}"][data-col="${col}"]`);
+    if (el) el.classList.add('found');
+  });
+
+  await sleep(550);
+
+  cellsToClear.forEach(({row, col}) => {
+    const el = document.querySelector(`.letter-block[data-row="${row}"][data-col="${col}"]`);
+    if (el) {
+      el.classList.remove('found');
+      el.classList.add('clearing');
+    }
+  });
+
+  await sleep(450);
+
+  cellsToClear.forEach(({row, col}) => grid[row][col] = null);
+
+  // Gravity per affected column
+  const colsAffected = new Set(cellsToClear.map(c => c.col));
+  colsAffected.forEach(col => {
+    const letters = [];
+    for (let r=0; r<ROWS; r++) if (grid[r][col] !== null) letters.push(grid[r][col]);
+    for (let r=0; r<ROWS; r++) grid[r][col] = null;
+    for (let i=0; i<letters.length; i++) grid[ROWS-1-i][col] = letters[letters.length-1-i];
+  });
+
+  document.getElementById('score').textContent = score;
+  document.getElementById('words').textContent = wordsFound;
+
+  if (wordsFound % 5 === 0) {
+    speedLevel++;
+    fallSpeed = Math.max(150, fallSpeed - 100);
+    document.getElementById('speed').textContent = speedLevel;
+  }
+
+  renderBoard();
+  await sleep(250);
+}
+
+function showWordFound(word, pts) {
+  const el = document.getElementById('wordFound');
+  el.textContent = `${word} +${pts}`;
+  el.className = 'word-found';
+  void el.offsetWidth;
+  el.className = 'word-found show';
+}
+
+function endGame() {
+  gameActive = false;
+  clearTimeout(fallTimer);
+  document.getElementById('finalScore').textContent = score;
+  document.getElementById('gameOver').classList.add('show');
+}
+
+function restartGame() {
+  document.getElementById('gameOver').classList.remove('show');
+  startGame();
+}
+
+function startGame() {
+  score = 0; wordsFound = 0; speedLevel = 1; fallSpeed = 800;
+  isProcessing = false;
+  document.getElementById('score').textContent = 0;
+  document.getElementById('words').textContent = 0;
+  document.getElementById('speed').textContent = 1;
+  gameActive = true;
+  initGrid();
+  renderBoard();
+  spawnBlock();
+}
+
+document.getElementById('leftBtn').addEventListener('click', moveLeft);
+document.getElementById('rightBtn').addEventListener('click', moveRight);
+document.getElementById('downBtn').addEventListener('click', speedDown);
+
+document.addEventListener('keydown', e => {
+  if (!gameActive) return;
+  if (e.key === 'ArrowLeft') { e.preventDefault(); moveLeft(); }
+  else if (e.key === 'ArrowRight') { e.preventDefault(); moveRight(); }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); speedDown(); }
+  else if (e.key === ' ') { e.preventDefault(); dropNow(); }
+});
+
+startGame();
+</script>
+</body>
+</html>
