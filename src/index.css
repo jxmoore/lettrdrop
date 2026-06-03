@@ -609,3 +609,58 @@ body {
   border-radius: 99px;
   box-shadow: inset 0 0 0 2px #ffe29a;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   In-game layout (v2) — HOLD + assists on a left rail, NEXT queue
+   on a right rail, the well centred between them, stats hugging the
+   board's bottom edge, logo + quit in the top bar.
+   ══════════════════════════════════════════════════════════════ */
+.pscreen.ig { gap: 12px; padding: 26px 18px 16px; }
+
+/* the play row: left rail · board column · right rail */
+.ig-stage { display: flex; gap: 10px; align-items: flex-start; margin-top: 18px; }
+.ig-boardcol { flex: 1; min-width: 0; display: block; }
+.ig-boardcol .dboard { width: 100%; box-shadow: inset 0 2px 7px rgba(31,111,87,.14), 0 4px 0 var(--cshadow); }
+.ig-boardcol .stats-row { margin-top: 16px; }
+.ig-railL, .ig-railR { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 13px; }
+
+/* Drive the well's size from an explicit aspect-ratio + 1fr tracks so the
+   grid's auto-row sizing can't collapse the rows and overflow the tiles. */
+.dboard-fit .cell, .dboard-fit .tile { aspect-ratio: auto; }
+
+/* translucent panels that hold HOLD and the NEXT queue */
+.ig-panel {
+  background: rgba(255,255,255,.46); border-radius: 16px; padding: 9px 7px 11px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  box-shadow: inset 0 1px 3px rgba(31,111,87,.1);
+}
+.ig-lab { font-size: 9px; font-weight: 800; letter-spacing: .9px; text-transform: uppercase; color: #80bba8; }
+
+/* queue tile (sized inline so NEXT can taper) */
+.ig-qtile {
+  border-radius: 12px; color: #fff; font-weight: 800; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center; position: relative;
+  background: linear-gradient(165deg, var(--cl), var(--c) 55%);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.6), 0 3px 0 var(--cd);
+  text-shadow: 0 1px 1px rgba(0,0,0,.2);
+}
+.ig-vtrack { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+
+/* HOLD slot — a parked tile (or a dashed empty slot) */
+.ig-holdslot { width: 34px; height: 39px; border-radius: 11px; display: flex; align-items: center; justify-content: center; position: relative; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ig-holdslot.empty { border: 2.5px dashed #aed8c9; background: rgba(255,255,255,.4); }
+.ig-holdslot .ig-qtile { width: 100%; height: 100%; font-size: 17px; }
+
+/* assists stacked under HOLD, sized to match the queue tiles */
+.ig-railctrls { display: flex; flex-direction: column; align-items: center; gap: 13px; }
+.ig-railctrls .iconbtn { width: 34px; height: 39px; border-radius: 11px; }
+
+/* quit/close — a muted candy chip, centred over the NEXT rail */
+.ig-quit {
+  width: 38px; height: 38px; border-radius: 12px; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; color: #8bb6a7; margin-right: 5px;
+  background: radial-gradient(120% 70% at 50% 0%, #ffffff 0%, #eef7f3 100%);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.9), 0 3px 0 var(--cshadow);
+  -webkit-tap-highlight-color: transparent;
+}
+.ig-quit svg { display: block; }

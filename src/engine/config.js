@@ -1,4 +1,4 @@
-export const ROWS = 9;
+export const ROWS = 12;
 export const COLS = 6;
 export const SPAWN_COL = 3;
 export const NEXT_COUNT = 6;

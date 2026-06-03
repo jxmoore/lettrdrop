@@ -3,6 +3,7 @@ import DropTile from './DropTile';
 export default function DropBoard({
   grid,
   cols = 6,
+  fit = false,
   active = null,
   ghostCell = null,
   matched = [],
@@ -15,8 +16,14 @@ export default function DropBoard({
   const isMatched = (r, c) => matched.some(([mr, mc]) => mr === r && mc === c);
   const isPending = (r, c) => pending.some(([pr, pc]) => pr === r && pc === c);
 
+  const style = { '--cols': cols };
+  if (fit) {
+    style.aspectRatio = `${cols} / ${grid.length}`;
+    style.gridTemplateRows = `repeat(${grid.length}, 1fr)`;
+  }
+
   return (
-    <div className="dboard" style={{ '--cols': cols }}>
+    <div className={`dboard${fit ? ' dboard-fit' : ''}`} style={style}>
       {grid.map((row, r) =>
         row.map((L, c) => {
           if (active && active.r === r && active.c === c) {

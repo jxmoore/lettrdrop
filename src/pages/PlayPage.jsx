@@ -291,6 +291,7 @@ export default function PlayPage() {
       onSwap={handleSwap}
       onHold={doHold}
       onPause={pause}
+      onQuit={pause}
       overlay={overlay}
     />
   );

@@ -434,6 +434,9 @@ export default function useGameEngine() {
     s.jumbles--;
     setJumbles(s.jumbles);
 
+    // Pause gravity so the active tile doesn't fall/lock during the shuffle
+    if (tickTimer.current) clearTimeout(tickTimer.current);
+
     // Record per-column tile counts so we preserve stack heights
     const colCounts = Array(COLS).fill(0);
     const letters = [];
@@ -471,6 +474,8 @@ export default function useGameEngine() {
       setShuffling(false);
       fn.current.syncAll();
       fn.current.checkDanger();
+      // Resume gravity after shuffle completes
+      fn.current.scheduleTick();
       setTimeout(() => fn.current.resolveWords(), 200);
     }, 640);
   }, []);
@@ -483,13 +488,20 @@ export default function useGameEngine() {
     setSwaps(s.swaps);
     setSwapping(true);
 
+    // Pause gravity while the swap animation plays
+    if (tickTimer.current) clearTimeout(tickTimer.current);
+
     setTimeout(() => {
       let newLetter = randomLetter();
       while (newLetter === s.active.L) newLetter = randomLetter();
-      s.active = { ...s.active, L: newLetter };
+      // Restart the tile from the top with the new letter
+      s.active = { r: 0, c: SPAWN_COL, L: newLetter };
+      s.holdUsed = false;
+      s.softDrop = false;
       setTimeout(() => {
         setSwapping(false);
         fn.current.syncActive();
+        fn.current.scheduleTick();
       }, 300);
     }, 260);
   }, []);
