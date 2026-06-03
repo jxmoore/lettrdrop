@@ -18,10 +18,11 @@ export default function HomePage() {
       <div className="home-top">
         <div />
         <div
-          className="avatar"
+          className={`avatar${isPremium ? ' prem' : ''}`}
           onClick={() => navigate('/profile')}
           style={{ cursor: 'pointer' }}
         >
+          {isPremium && <span className="crown">👑</span>}
           {displayName?.[0]?.toUpperCase() || '?'}
         </div>
       </div>
@@ -29,10 +30,12 @@ export default function HomePage() {
       <div className="home-hero">
         <Logo s={52} />
         <div className="welcome">Welcome back, {displayName || 'Player'}!</div>
-        <div className="bestchip">
-          <span className="k">Best</span>
-          {bestScore.toLocaleString()}
-        </div>
+        {bestScore > 0 && (
+          <div className="bestchip">
+            <span className="k">Best</span>
+            {bestScore.toLocaleString()}
+          </div>
+        )}
       </div>
 
       <div className="menu-btns">

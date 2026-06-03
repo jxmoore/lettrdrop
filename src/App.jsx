@@ -13,6 +13,7 @@ import ResultsPage from './pages/ResultsPage';
 import HighScoresPage from './pages/HighScoresPage';
 import ProfilePage from './pages/ProfilePage';
 import PremiumPage from './pages/PremiumPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 function RequireAuth({ children }) {
   const { isAuthenticated } = useSelector((state) => state.session);
@@ -123,6 +124,10 @@ export default function App() {
                 <PremiumPage />
               </RequireAuth>
             }
+          />
+          <Route
+            path="/reset-password"
+            element={<ResetPasswordPage />}
           />
           <Route path="*" element={<RootRedirect />} />
         </Routes>

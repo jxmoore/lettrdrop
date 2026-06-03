@@ -50,6 +50,16 @@ export async function updateProfile(userId, updates) {
   return data;
 }
 
+export async function checkEmailExists(email) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('email', email)
+    .maybeSingle();
+  if (error) throw error;
+  return !!data;
+}
+
 export async function checkDisplayNameAvailable(name) {
   const { data, error } = await supabase.rpc('is_display_name_available', {
     name,
@@ -67,4 +77,16 @@ export async function getSession() {
   const { data, error } = await supabase.auth.getSession();
   if (error) throw error;
   return data.session;
+}
+
+export async function resetPasswordForEmail(email) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+  if (error) throw error;
+}
+
+export async function updateUserPassword(newPassword) {
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
+  if (error) throw error;
 }

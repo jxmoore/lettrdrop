@@ -234,6 +234,50 @@ and glow the Score stat. Play continues.
   5. Handle the `AuthSocialName` screen for providers that don't return a display name.
 - **Password‑reset flow:** wire `ForgotSent` → Supabase `resetPasswordForEmail` →
   deep‑link → `ResetPassword` screen → `updateUser({ password })`.
+- **Remove dev premium toggle:** delete the `[DEV] Enable/Disable Premium` toggle in
+  `ProfilePage.jsx` — it writes `is_premium` directly to Supabase without payment
+  verification and exists only for testing during development.
+- **Remove mock premium purchase:** replace the mock `handlePurchase` in
+  `PremiumPage.jsx` (which sets `is_premium: true` with no real payment) with a real
+  in‑app purchase or Stripe Checkout flow. The "Unlock Premium" button should only
+  grant premium after a verified transaction. Also remove the mock `handleRestore`.
+- **Activate RevenueCat + Capacitor in-app purchases** (scaffolding already in place):
+  1. Create a **RevenueCat** account at [app.revenuecat.com](https://app.revenuecat.com)
+     (free tier covers up to $2,500/mo in tracked revenue).
+  2. Create a new Project in RevenueCat, add **Apple App Store** and/or **Google Play**
+     as platforms, and enter the required credentials:
+     - **Apple:** App-Specific Shared Secret (App Store Connect → App → General →
+       App Information → App-Specific Shared Secret) and optionally your StoreKit
+       configuration file for sandbox testing.
+     - **Google:** Google Play service account JSON key (Play Console → Setup →
+       API access → Service accounts).
+  3. Create the product in **App Store Connect** and/or **Google Play Console**:
+     - Product ID: `lettrdrop_premium` (non-consumable / one-time purchase).
+     - Price: $4.99.
+  4. In RevenueCat, create an **Entitlement** called `premium`, an **Offering**
+     (default), and a **Package** that maps to the `lettrdrop_premium` product.
+  5. Copy the **Public API Key** from RevenueCat → Project → API Keys, and paste it
+     into `src/services/purchases.js` as the `RC_API_KEY` value (replace
+     `__YOUR_REVENUECAT_PUBLIC_API_KEY__`).
+  6. Add the native platforms:
+     ```bash
+     npm install @capacitor/ios @capacitor/android   # if not already installed
+     npx cap add ios
+     npx cap add android
+     ```
+  7. Build and sync:
+     ```bash
+     npm run build
+     npx cap sync
+     ```
+  8. Open the native projects (`npx cap open ios` / `npx cap open android`) and
+     enable the **In-App Purchase** capability (Xcode → Signing & Capabilities;
+     Android needs no extra capability).
+  9. Test in sandbox (TestFlight / Google internal testing) before going live.
+  10. **(Optional) RevenueCat webhook → Supabase:** for server-side entitlement
+      verification, set up a RevenueCat webhook that calls a Supabase Edge Function
+      to flip `profiles.is_premium` based on purchase/expiration events. This adds a
+      second layer of truth beyond the client-side flag.
 
 ---
 

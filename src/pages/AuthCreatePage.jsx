@@ -5,7 +5,6 @@ import { signUp, checkDisplayNameAvailable } from '../services/auth';
 export default function AuthCreatePage({
   email,
   onBack,
-  onSignInInstead,
   onSuccess,
 }) {
   const [displayName, setDisplayName] = useState('');
@@ -69,7 +68,7 @@ export default function AuthCreatePage({
 
   return (
     <div className="pscreen auth">
-      <AuthHead title="Create account" />
+      <AuthHead title="Create your account" />
 
       <div className="email-chip">
         <span className="em">{email}</span>
@@ -80,7 +79,7 @@ export default function AuthCreatePage({
         <input
           className="field"
           type="text"
-          placeholder="Display name"
+          placeholder="Display name (e.g. Jordan S.)"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           autoComplete="username"
@@ -103,7 +102,7 @@ export default function AuthCreatePage({
         <input
           className="field"
           type="password"
-          placeholder="Password (6+ characters)"
+          placeholder="Create a password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="new-password"
@@ -117,14 +116,13 @@ export default function AuthCreatePage({
           </div>
         )}
 
-        <Btn variant="primary" wide type="submit" disabled={!canSubmit}>
-          {loading ? 'Creating...' : 'Create Account'}
+        <Btn variant="gold" wide type="submit" disabled={!canSubmit}>
+          {loading ? 'Creating...' : 'Create account'}
         </Btn>
       </form>
 
-      <div className="auth-switch">
-        Already have an account?{' '}
-        <a onClick={onSignInInstead}>Sign in</a>
+      <div className="fineprint">
+        No account for that email yet &mdash; let&apos;s set one up.
       </div>
     </div>
   );

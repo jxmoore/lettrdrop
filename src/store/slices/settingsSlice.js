@@ -26,6 +26,9 @@ const settingsSlice = createSlice({
     hydrate(state, action) {
       return { ...state, ...action.payload };
     },
+    clearSettings() {
+      return initialState;
+    },
   },
 });
 
@@ -35,5 +38,6 @@ export const {
   setHasPlayedBefore,
   setSoundEnabled,
   hydrate,
+  clearSettings,
 } = settingsSlice.actions;
 export default settingsSlice.reducer;
